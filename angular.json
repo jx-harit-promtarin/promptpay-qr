@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "gen-promptpay-qr": {
+    "promptpay-qr-generator": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",
@@ -12,7 +12,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/gen-promptpay-qr",
+            "outputPath": "dist/promptpay-qr-generator",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -43,14 +43,14 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "gen-promptpay-qr:build"
+            "buildTarget": "promptpay-qr-generator:build"
           },
           "configurations": {
             "production": {
-              "buildTarget": "gen-promptpay-qr:build:production"
+              "buildTarget": "promptpay-qr-generator:build:production"
             },
             "development": {
-              "buildTarget": "gen-promptpay-qr:build:development"
+              "buildTarget": "promptpay-qr-generator:build:development"
             }
           },
           "defaultConfiguration": "development"

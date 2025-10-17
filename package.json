@@ -1,5 +1,5 @@
 {
-  "name": "gen-promptpay-qr",
+  "name": "promptpay-qr-generator",
   "version": "0.0.1",
   "private": true,
   "scripts": {
