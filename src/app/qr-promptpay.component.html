@@ -1,7 +1,7 @@
 <div style="max-width:760px;margin:auto;padding:16px;display:grid;gap:16px;">
-  <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;">
     <img src="assets/images/logo.png" alt="PromptPay QR Generator" style="height: 60px;">
-    <h2 style="margin: 0; color: #333">PromptPay QR</h2>
+    <h2 style="margin: 0; color: #333">{{appName}}</h2>
   </div>
 
   <div style="display:grid;gap:8px;">
@@ -46,7 +46,7 @@
     <button (click)="copyPayload()" [disabled]="!payload">คัดลอก Payload</button>
   </div> -->
 
-  <div *ngIf="payload" style="display:flex;justify-content: center; align-items:center;flex-wrap:wrap;margin-top: 30px;flex-direction: column;gap: 16px;">
+  <div *ngIf="payload" style="display:flex;justify-content: center; align-items:center;flex-wrap:wrap;margin-top: 20px;flex-direction: column;gap: 16px;">
     <div #qrCodeElement>
       <!-- <strong>QR Code</strong> -->
       <qrcode [qrdata]="payload" [width]="256" [errorCorrectionLevel]="'M'"></qrcode>
@@ -81,6 +81,6 @@
 </div>
 <!-- Version Display -->
 <div
-  style="position:fixed;bottom:16px;left:16px;font-size:12px;color:#666;background:rgba(255,255,255,0.9);padding:4px 8px;border-radius:4px;border:1px solid #e0e0e0;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-  {{appName}} version {{ appVersion }}
+  style="position:fixed;top:16px;right:16px;font-size:12px;color:#666;background:rgba(255,255,255,0.9);padding:4px 8px;border-radius:4px;border:1px solid #e0e0e0;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+  version {{ appVersion }}
 </div>
