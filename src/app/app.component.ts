@@ -1,12 +1,12 @@
 import { Component } from "@angular/core";
-import { QrPromptPayComponent } from "./qr-promptpay.component";
+import { PromptPayQrComponent } from "./promptpay-qr/promptpay-qr.component";
 import { environment } from "src/environments/environment";
 
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [QrPromptPayComponent],
-  template: `<app-qr-promptpay></app-qr-promptpay>`,
+  imports: [PromptPayQrComponent, PromptPayQrComponent],
+  template: `<app-promptpay-qr></app-promptpay-qr>`,
 })
 export class AppComponent {
   title = environment.appName;

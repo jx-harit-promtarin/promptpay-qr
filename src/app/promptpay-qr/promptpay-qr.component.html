@@ -1,0 +1,178 @@
+<div class="container">
+  <div class="header">
+    <div class="app-info">
+      <img src="assets/images/logo.png" alt="PromptPay QR Generator" class="logo">
+      <div>
+        <div class="title-row">
+          <h2 class="app-title">{{appName}}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="more-actions">
+      <button type="button" class="btn-more" (click)="toggleMoreActions($event)" aria-haspopup="menu" [attr.aria-expanded]="showMoreActions" aria-label="More actions"
+        title="More actions">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="5" r="2"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+          <circle cx="12" cy="19" r="2"></circle>
+        </svg>
+      </button>
+      <div *ngIf="showMoreActions" class="more-menu" id="more-menu" role="menu">
+        <button type="button" role="menuitem" class="menu-item" (click)="onMoreSelect('share')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          Share this app
+        </button>
+        <button type="button" role="menuitem" class="menu-item" (click)="onMoreSelect('version')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          Version {{appVersion}}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="radio-group">
+    <label>
+      <input type="radio" value="mobile" name="ptype" [checked]="form.value.proxyType==='mobile'" (change)="form.patchValue({proxyType:'mobile'})">
+      หมายเลขโทรศัพท์มือถือ
+    </label>
+    <label>
+      <input type="radio" value="citizenId" name="ptype" [checked]="form.value.proxyType==='citizenId'" (change)="form.patchValue({proxyType:'citizenId'})">
+      เลขบัตรประชาชน (13 หลัก)
+    </label>
+  </div>
+
+  <div *ngIf="form.value.proxyType==='mobile'" class="input-group">
+    <input type="text" [formControl]="form.controls.mobile" placeholder="0XXXXXXXXX">
+  </div>
+
+  <div *ngIf="form.value.proxyType==='citizenId'" class="input-group">
+    <input type="text" id="citizen-id-input" [formControl]="form.controls.citizenId" placeholder="1234567890123" maxlength="13" class="input-width-limited">
+  </div>
+
+  <div *ngIf="errorMsg" class="error-message">{{ errorMsg }}</div>
+
+  <label for="amount-input" class="input-group">
+    จำนวนเงิน (บาท)
+    <input type="number" id="amount-input" step="0.01" [formControl]="form.controls.amount" placeholder="0.00" class="input-width-limited">
+  </label>
+
+
+  <div *ngIf="payload" class="qr-container">
+    <div #qrCodeElement>
+      <qrcode [qrdata]="payload" [width]="256" [errorCorrectionLevel]="'M'"></qrcode>
+    </div>
+
+    <!-- QR Code Action Buttons -->
+    <div class="button-group">
+      <button (click)="copyQRCodeImage()" class="btn-copy">
+        คัดลอก
+      </button>
+      <button (click)="shareQRCode()" class="btn-share">
+        แชร์ QR
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Share App Modal -->
+<div *ngIf="showShareModal" class="modal-backdrop" (click)="onBackdropClick($event)" (keydown)="onModalKeydown($event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="share-modal-title" [class.fullscreen]="isSmallScreen" (keydown)="onModalKeydown($event)">
+    <div class="modal-header">
+      <h3 id="share-modal-title">แชร์แอปนี้</h3>
+      <button type="button" class="btn-close" aria-label="Close" (click)="closeModalShareApp()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs" role="tablist" aria-label="Share platform">
+        <button id="tab-web" role="tab" class="tab" [class.active]="selectedSharePlatform==='web'" aria-controls="panel-web" [attr.aria-selected]="selectedSharePlatform==='web'" (click)="setSharePlatform('web')">Web</button>
+        <!-- <button id="tab-android" role="tab" class="tab" [class.active]="selectedSharePlatform==='android'" aria-controls="panel-android" [attr.aria-selected]="selectedSharePlatform==='android'" (click)="setSharePlatform('android')">Android</button>
+        <button id="tab-ios" role="tab" class="tab" [class.active]="selectedSharePlatform==='ios'" aria-controls="panel-ios" [attr.aria-selected]="selectedSharePlatform==='ios'" (click)="setSharePlatform('ios')">iOS</button> -->
+      </div>
+
+      <!-- Web panel -->
+      <div role="tabpanel" id="panel-web" aria-labelledby="tab-web" *ngIf="selectedSharePlatform==='web'">
+        <div class="share-actions">
+          <button type="button" class="share-action" (click)="shareAppSystem('web')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            แชร์ลิงก์นี้
+          </button>
+          <button type="button" class="share-action" (click)="copyAppUrl('web')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            คัดลอกลิงก์
+          </button>
+        </div>
+      </div>
+
+      <!-- Android panel -->
+      <div role="tabpanel" id="panel-android" aria-labelledby="tab-android" *ngIf="selectedSharePlatform==='android'">
+        <div class="share-actions">
+          <button type="button" class="share-action" (click)="shareAppSystem('android')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            แชร์แอปนี้
+          </button>
+          <button type="button" class="share-action" (click)="copyAppUrl('android')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            คัดลอกลิงก์
+          </button>
+        </div>
+      </div>
+
+      <!-- iOS panel -->
+      <div role="tabpanel" id="panel-ios" aria-labelledby="tab-ios" *ngIf="selectedSharePlatform==='ios'">
+        <div class="share-actions">
+          <button type="button" class="share-action" (click)="shareAppSystem('ios')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            แชร์แอปนี้
+          </button>
+          <button type="button" class="share-action" (click)="copyAppUrl('ios')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            คัดลอกลิงก์
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div *ngIf="showToast" class="toast-container">
+  <div class="toast">
+    {{toastMessage}}
+  </div>
+</div>
