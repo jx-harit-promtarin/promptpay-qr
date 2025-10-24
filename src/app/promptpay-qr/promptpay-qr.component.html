@@ -84,6 +84,11 @@
   </div>
 </div>
 
+<!-- Fullscreen Loading Overlay -->
+<div *ngIf="isLoading" class="loading-overlay">
+  <div class="loading-spinner-large"></div>
+</div>
+
 <!-- Share App Modal -->
 <div *ngIf="showShareModal" class="modal-backdrop" (click)="onBackdropClick($event)" (keydown)="onModalKeydown($event)">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="share-modal-title" [class.fullscreen]="isSmallScreen" (keydown)="onModalKeydown($event)">

@@ -32,6 +32,7 @@ export class PromptPayQrComponent implements OnInit {
   selectedSharePlatform: SharePlatform = 'web';
   toastMessage = '';
   showToast = false;
+  isLoading = false;
 
   @ViewChild('qrCodeElement') qrCodeElement!: ElementRef;
 
@@ -114,90 +115,107 @@ export class PromptPayQrComponent implements OnInit {
   }
 
   async copyQRCodeImage(): Promise<void> {
+    this.isLoading = true;
     try {
       const canvas = this.qrCodeElement.nativeElement.querySelector('canvas');
       if (!canvas) {
         this.showToastMessage('ไม่พบ QR Code');
+        this.isLoading = false;
         return;
       }
 
-      // Convert canvas to blob
-      canvas.toBlob(async (blob: Blob | null) => {
-        if (!blob) {
-          this.showToastMessage('ไม่สามารถสร้างภาพ QR Code ได้');
-          return;
-        }
+      // Convert canvas to blob using Promise
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/png');
+      });
 
-        try {
-          // Check if Clipboard API is supported
-          if (navigator.clipboard && globalThis.ClipboardItem) {
-            await navigator.clipboard.write([
-              new (globalThis as any).ClipboardItem({
-                'image/png': blob
-              })
-            ]);
-            this.showToastMessage('คัดลอก QR Code แล้ว');
-          } else {
-            // Fallback: create download link
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `promptpay-qr-${Date.now()}.png`;
-            link.click();
-            URL.revokeObjectURL(url);
-            this.showToastMessage('ดาวน์โหลด QR Code แล้ว');
-          }
-        } catch (error) {
-          console.error('Error copying to clipboard:', error);
-          this.showToastMessage('ไม่สามารถคัดลอก QR Code ได้');
+      if (!blob) {
+        this.showToastMessage('ไม่สามารถสร้างภาพ QR Code ได้');
+        this.isLoading = false;
+        return;
+      }
+
+      try {
+        // Check if Clipboard API is supported
+        if (navigator.clipboard && globalThis.ClipboardItem) {
+          await navigator.clipboard.write([
+            new (globalThis as any).ClipboardItem({
+              'image/png': blob
+            })
+          ]);
+          this.showToastMessage('คัดลอก QR Code แล้ว');
+        } else {
+          // Fallback: create download link
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `promptpay-qr-${Date.now()}.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+          this.showToastMessage('ดาวน์โหลด QR Code แล้ว');
         }
-      }, 'image/png');
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        this.showToastMessage('ไม่สามารถคัดลอก QR Code ได้');
+      } finally {
+        this.isLoading = false;
+      }
     } catch (error) {
       console.error('Error copying QR code:', error);
       this.showToastMessage('ไม่สามารถคัดลอก QR Code ได้');
+      this.isLoading = false;
     }
   }
 
   async shareQRCode(): Promise<void> {
+    this.isLoading = true;
     try {
       const canvas = this.qrCodeElement.nativeElement.querySelector('canvas');
       if (!canvas) {
         this.showToastMessage('ไม่พบ QR Code');
+        this.isLoading = false;
         return;
       }
 
-      // Convert canvas to blob
-      canvas.toBlob(async (blob: Blob | null) => {
-        if (!blob) {
-          this.showToastMessage('ไม่สามารถสร้างภาพ QR Code ได้');
-          return;
-        }
+      // Convert canvas to blob using Promise
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/png');
+      });
 
-        const amount = this.form.value.amount;
+      if (!blob) {
+        this.showToastMessage('ไม่สามารถสร้างภาพ QR Code ได้');
+        this.isLoading = false;
+        return;
+      }
 
-        const shareData = {
-          title: 'PromptPay QR Code',
-          text: `PromptPay QR Code - ${amount} บาท`,
-          files: [new File([blob], 'promptpay-qr.png', { type: 'image/png' })]
-        };
+      const amount = this.form.value.amount;
 
-        // Check if Web Share API is supported
-        if (navigator?.share && navigator?.canShare?.(shareData)) {
-          try {
-            await navigator.share(shareData);
-          } catch (error) {
-            console.error('Error sharing:', error);
-            // Fallback to download
-            this.downloadQRCode(blob);
-          }
-        } else {
-          // Fallback: create download link
+      const shareData = {
+        title: 'PromptPay QR Code',
+        text: `PromptPay QR Code - ${amount} บาท`,
+        files: [new File([blob], 'promptpay-qr.png', { type: 'image/png' })]
+      };
+
+      // Check if Web Share API is supported
+      if (navigator?.share && navigator?.canShare?.(shareData)) {
+        try {
+          await navigator.share(shareData);
+        } catch (error) {
+          console.error('Error sharing:', error);
+          // Fallback to download
           this.downloadQRCode(blob);
+        } finally {
+          this.isLoading = false;
         }
-      }, 'image/png');
+      } else {
+        // Fallback: create download link
+        this.downloadQRCode(blob);
+        this.isLoading = false;
+      }
     } catch (error) {
       console.error('Error sharing QR code:', error);
       this.showToastMessage('ไม่สามารถแชร์ QR Code ได้');
+      this.isLoading = false;
     }
   }
 
@@ -250,13 +268,13 @@ export class PromptPayQrComponent implements OnInit {
     let text = `${this.appName} v${this.appVersion}`;
     switch (platform) {
       case 'web':
-        text += ' - share this link';
+        text += ' - Share Web App';
         break;
       case 'android':
-        text += ' - share this android app';
+        text += ' - Share Android App';
         break;
       case 'ios':
-        text += ' - share this ios app';
+        text += ' - Share iOS App';
         break;
       default:
         break;
