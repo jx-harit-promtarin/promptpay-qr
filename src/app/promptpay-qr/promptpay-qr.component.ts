@@ -129,8 +129,8 @@ export class PromptPayQrComponent implements OnInit {
     if (!ctx) return;
 
     const qrSize = 256;
-    const textHeight = 80;
-    const padding = 20;
+    const textHeight = 40;
+    const padding = 0;
     
     combinedCanvas.width = qrSize + (padding * 2);
     combinedCanvas.height = qrSize + textHeight + (padding * 2);
@@ -148,7 +148,7 @@ export class PromptPayQrComponent implements OnInit {
     ctx.font = '14px Arial, sans-serif';
 
     const centerX = combinedCanvas.width / 2;
-    const textStartY = qrSize + padding + 20;
+    const textStartY = qrSize + padding + 5;
 
     // เขียนข้อความ
     const typeText = 'พร้อมเพย์';
