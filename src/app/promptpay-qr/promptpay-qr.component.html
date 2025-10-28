@@ -68,8 +68,14 @@
 
 
   <div *ngIf="payload" class="qr-container">
-    <div #qrCodeElement>
+    <!-- QR Code ที่ซ่อนไว้สำหรับสร้างข้อมูล -->
+    <div #qrCodeElement class="hidden-qr">
       <qrcode [qrdata]="payload" [width]="256" [errorCorrectionLevel]="'M'"></qrcode>
+    </div>
+    
+    <!-- QR Code พร้อมข้อความ -->
+    <div *ngIf="combinedQRImageDataUrl" class="combined-qr-image">
+      <img [src]="combinedQRImageDataUrl" alt="PromptPay QR Code with Information" />
     </div>
 
     <!-- QR Code Action Buttons -->

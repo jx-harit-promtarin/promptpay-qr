@@ -33,6 +33,7 @@ export class PromptPayQrComponent implements OnInit {
   toastMessage = '';
   showToast = false;
   isLoading = false;
+  combinedQRImageDataUrl = '';
 
   @ViewChild('qrCodeElement') qrCodeElement!: ElementRef;
 
@@ -42,8 +43,8 @@ export class PromptPayQrComponent implements OnInit {
     // โหลดค่าเริ่มต้นจาก localStorage
     this.loadFromLocalStorage();
 
-    this.rebuild();
-    this.form.valueChanges.subscribe(() => this.rebuild());
+    this.rebuildQRCode();
+    this.form.valueChanges.subscribe(() => this.rebuildQRCode());
   }
 
   private loadFromLocalStorage(): void {
@@ -72,7 +73,7 @@ export class PromptPayQrComponent implements OnInit {
     }
   }
 
-  rebuild(): void {
+  rebuildQRCode(): void {
     this.errorMsg = "";
     this.payload = "";
 
@@ -104,30 +105,73 @@ export class PromptPayQrComponent implements OnInit {
       this.secureStorage.setSecureStorage("amount", amount.toString());
 
       this.payload = this.promptPayQrService.buildDynamicByProxy(proxyType, idValue, amount);
+      
+      // สร้างรูป QR code พร้อมข้อความ
+      setTimeout(() => this.generateCombinedQRImage(), 100);
     } catch (e: any) {
       this.payload = "";
       this.errorMsg = e?.message || "Invalid input";
+      this.combinedQRImageDataUrl = '';
     }
   }
 
-  copyPayload(): void {
-    if (this.payload) navigator.clipboard.writeText(this.payload);
+  private generateCombinedQRImage(): void {
+    const qrCanvas = this.qrCodeElement?.nativeElement?.querySelector('canvas');
+    if (!qrCanvas || !this.payload) return;
+
+    const proxyType = this.form.value.proxyType ?? "mobile";
+    const amount = Number(this.form.value.amount ?? 0);
+    const idValue = proxyType === "mobile" ? this.form.value.mobile ?? "" : this.form.value.citizenId ?? "";
+
+    // สร้าง canvas ใหม่สำหรับรูปแบบรวม
+    const combinedCanvas = document.createElement('canvas');
+    const ctx = combinedCanvas.getContext('2d');
+    if (!ctx) return;
+
+    const qrSize = 256;
+    const textHeight = 80;
+    const padding = 20;
+    
+    combinedCanvas.width = qrSize + (padding * 2);
+    combinedCanvas.height = qrSize + textHeight + (padding * 2);
+
+    // ตั้งค่าพื้นหลังสีขาว
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+
+    // วาด QR code
+    ctx.drawImage(qrCanvas, padding, padding, qrSize, qrSize);
+
+    // ตั้งค่าฟอนต์และสี
+    ctx.fillStyle = '#333333';
+    ctx.textAlign = 'center';
+    ctx.font = '14px Arial, sans-serif';
+
+    const centerX = combinedCanvas.width / 2;
+    const textStartY = qrSize + padding + 20;
+
+    // เขียนข้อความ
+    const typeText = 'พร้อมเพย์';
+    ctx.fillText(`${typeText}: ${idValue}`, centerX, textStartY);
+    ctx.fillText(`จำนวนเงิน: ${amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`, centerX, textStartY + 20);
+
+    // บันทึกเป็น data URL
+    this.combinedQRImageDataUrl = combinedCanvas.toDataURL('image/png');
   }
 
+  // Copy & Share QR Code Image
   async copyQRCodeImage(): Promise<void> {
     this.isLoading = true;
     try {
-      const canvas = this.qrCodeElement.nativeElement.querySelector('canvas');
-      if (!canvas) {
+      if (!this.combinedQRImageDataUrl) {
         this.showToastMessage('ไม่พบ QR Code');
         this.isLoading = false;
         return;
       }
 
-      // Convert canvas to blob using Promise
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, 'image/png');
-      });
+      // Convert data URL to blob
+      const response = await fetch(this.combinedQRImageDataUrl);
+      const blob = await response.blob();
 
       if (!blob) {
         this.showToastMessage('ไม่สามารถสร้างภาพ QR Code ได้');
@@ -166,21 +210,18 @@ export class PromptPayQrComponent implements OnInit {
       this.isLoading = false;
     }
   }
-
   async shareQRCode(): Promise<void> {
     this.isLoading = true;
     try {
-      const canvas = this.qrCodeElement.nativeElement.querySelector('canvas');
-      if (!canvas) {
+      if (!this.combinedQRImageDataUrl) {
         this.showToastMessage('ไม่พบ QR Code');
         this.isLoading = false;
         return;
       }
 
-      // Convert canvas to blob using Promise
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, 'image/png');
-      });
+      // Convert data URL to blob
+      const response = await fetch(this.combinedQRImageDataUrl);
+      const blob = await response.blob();
 
       if (!blob) {
         this.showToastMessage('ไม่สามารถสร้างภาพ QR Code ได้');
@@ -218,7 +259,6 @@ export class PromptPayQrComponent implements OnInit {
       this.isLoading = false;
     }
   }
-
   private downloadQRCode(blob: Blob): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -229,6 +269,7 @@ export class PromptPayQrComponent implements OnInit {
     this.showToastMessage('ดาวน์โหลด QR Code แล้ว');
   }
 
+  // Share App
   openModalShareApp(): void {
     // Open modal; on small screens it becomes fullscreen via CSS
     this.showShareModal = true;
@@ -244,25 +285,20 @@ export class PromptPayQrComponent implements OnInit {
 
     this.selectedSharePlatform = 'web';
   }
-
   closeModalShareApp(): void {
     this.showShareModal = false;
   }
-
   onBackdropClick(event: MouseEvent): void {
     if ((event.target as HTMLElement)?.classList?.contains('modal-backdrop')) {
       this.closeModalShareApp();
     }
   }
-
   onModalKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') this.closeModalShareApp();
   }
-
   setSharePlatform(p: SharePlatform): void {
     this.selectedSharePlatform = p;
   }
-
   shareAppSystem(platform?: SharePlatform): void {
     const url = globalThis?.location?.origin || document.location.origin;
     let text = `${this.appName} v${this.appVersion}`;
@@ -296,7 +332,6 @@ export class PromptPayQrComponent implements OnInit {
       this.copyAppUrl();
     }
   }
-
   copyAppUrl(platform?: SharePlatform): void {
     let url = globalThis?.location?.origin || document.location.origin;
     let message = 'คัดลอกลิงก์แล้ว';
@@ -323,24 +358,20 @@ export class PromptPayQrComponent implements OnInit {
       this.closeModalShareApp();
     }, 1000);
   }
-
   toggleMoreActions(event: MouseEvent): void {
     event.stopPropagation();
     this.showMoreActions = !this.showMoreActions;
   }
-
   onMoreSelect(action: 'share' | 'version'): void {
     this.showMoreActions = false;
     if (action === 'share') {
       this.openModalShareApp();
     }
   }
-
   @HostListener('document:click')
   onDocumentClick(): void {
     if (this.showMoreActions) this.showMoreActions = false;
   }
-
   get isSmallScreen(): boolean {
     try {
       return !!globalThis?.matchMedia?.('(max-width: 600px)')?.matches;
@@ -349,6 +380,7 @@ export class PromptPayQrComponent implements OnInit {
     }
   }
 
+  // Show Toast Message
   private showToastMessage(message: string, duration = 3000): void {
     this.toastMessage = message;
     this.showToast = true;
