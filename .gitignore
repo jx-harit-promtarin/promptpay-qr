@@ -16,6 +16,7 @@
 
 # Angular CLI and build artefacts
 /.angular-cli.json
+package-lock.json
 /.ng/
 
 # TypeScript cache
