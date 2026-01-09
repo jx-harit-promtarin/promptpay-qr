@@ -235,9 +235,9 @@ export class PromptPayQrComponent implements OnInit {
     // อนุญาตเฉพาะตัวเลข 0-9, Backspace, Delete, Tab, และ Arrow keys
     const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
     const char = event.key;
-
+    
     // ถ้าไม่ใช่ตัวเลข 0-9 และไม่ใช่ปุ่มควบคุมที่อนุญาต ให้ป้องกันการพิมพ์
-    if (!/^\D$/.test(char) && !allowedKeys.includes(char)) {
+    if (/^\D$/.test(char) && !allowedKeys.includes(char)) {
       event.preventDefault();
     }
   }
