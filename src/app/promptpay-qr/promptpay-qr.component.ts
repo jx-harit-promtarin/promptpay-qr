@@ -16,11 +16,21 @@ type SharePlatform = 'web' | 'android' | 'ios';
   styleUrls: ["./promptpay-qr.component.css"],
 })
 export class PromptPayQrComponent implements OnInit {
+  queryParamKeyList = {
+    promptpay: "promptpay",
+    amount: "amount",
+  };
+  localStorageKeyList = {
+    proxyType: "proxyType",
+    mobile: "mobile",
+    citizenId: "citizenId",
+    amount: "amount",
+  };
   form = this.fb.group({
     proxyType: <ProxyType>"mobile",
     mobile: [""],
     citizenId: [""],
-    amount: [0, [Validators.required, Validators.min(0.01)]],
+    amount: [0, [Validators.required, Validators.min(0)]],
   });
 
   payload = "";
@@ -40,37 +50,89 @@ export class PromptPayQrComponent implements OnInit {
   constructor(private fb: FormBuilder, private promptPayQrService: PromptPayQrService, private secureStorage: SecureStorageService) { }
 
   ngOnInit(): void {
-    // โหลดค่าเริ่มต้นจาก localStorage
-    this.loadFromLocalStorage();
-
+    // โหลดค่าจาก query parameters
+    const loadedKeys = this.loadFromQueryParams();
+    // โหลดค่าที่เหลือจาก localStorage
+    this.loadFromLocalStorage(...loadedKeys);
+    // สร้าง QR code ครั้งแรก
     this.rebuildQRCode();
     this.form.valueChanges.subscribe(() => this.rebuildQRCode());
+
   }
 
-  private loadFromLocalStorage(): void {
-    const savedProxyType = this.secureStorage.getSecureStorage("proxyType") as ProxyType;
-    const savedMobile = this.secureStorage.getSecureStorage("mobile");
-    const savedCitizenId = this.secureStorage.getSecureStorage("citizenId");
-    const savedAmount = this.secureStorage.getSecureStorage("amount");
-
-    if (savedProxyType) {
-      this.form.patchValue({ proxyType: savedProxyType });
-    }
-
-    if (savedMobile) {
-      this.form.patchValue({ mobile: savedMobile });
-    }
-
-    if (savedCitizenId) {
-      this.form.patchValue({ citizenId: savedCitizenId });
-    }
-
-    if (savedAmount) {
-      const amount = Number.parseFloat(savedAmount);
-      if (!Number.isNaN(amount)) {
-        this.form.patchValue({ amount: amount });
+  private loadFromQueryParams(): string[] {
+    // เตรียมรายการ key ที่จะโหลดจาก localStorage
+    const loadedKeys: string[] = Object.values(this.localStorageKeyList);
+    // โหลดค่าจาก query parameters
+    const urlParams = new URLSearchParams(globalThis.location.search);
+    urlParams.forEach((value, key) => {
+      // console.log(`Param: ${key} = ${value}`);
+      // ตรวจสอบและตั้งค่า promptpay
+      if (key === this.queryParamKeyList.promptpay && value) {
+        const promptpayDigits = value.replaceAll(/\D/g, '');
+        if (promptpayDigits.length > 0) {
+          // ตรวจสอบว่าคือหมายเลขมือถือหรือเลขบัตรประชาชน
+          if (promptpayDigits.length === 10 && promptpayDigits.startsWith('0')) {
+            // หมายเลขมือถือ 10 หลัก
+            this.form.patchValue({ proxyType: 'mobile', mobile: promptpayDigits });
+            // ลบ key ที่เกี่ยวข้องออกจากรายการที่จะโหลดจาก localStorage// ลบ key ที่เกี่ยวข้องออกจากรายการที่จะโหลดจาก localStorage
+            loadedKeys.splice(loadedKeys.indexOf(this.localStorageKeyList.proxyType), 1);
+            loadedKeys.splice(loadedKeys.indexOf(this.localStorageKeyList.mobile), 1);
+            loadedKeys.splice(loadedKeys.indexOf(this.localStorageKeyList.amount), 1);
+          } else if (promptpayDigits.length === 13) {
+            // เลขบัตรประชาชน 13 หลัก
+            this.form.patchValue({ proxyType: 'citizenId', citizenId: promptpayDigits });
+            // ลบ key ที่เกี่ยวข้องออกจากรายการที่จะโหลดจาก localStorage
+            loadedKeys.splice(loadedKeys.indexOf(this.localStorageKeyList.proxyType), 1);
+            loadedKeys.splice(loadedKeys.indexOf(this.localStorageKeyList.citizenId), 1);
+            loadedKeys.splice(loadedKeys.indexOf(this.localStorageKeyList.amount), 1);
+          }
+        }
       }
+      // ตรวจสอบและตั้งค่า amount
+      if (key === this.queryParamKeyList.amount && value) {
+        const amount = Number.parseFloat(value);
+        if (!Number.isNaN(amount) && amount >= 0) {
+          // จำนวนเงิน
+          this.form.patchValue({ amount: amount });
+          // ลบ key ที่เกี่ยวข้องออกจากรายการที่จะโหลดจาก localStorage
+          loadedKeys.splice(loadedKeys.indexOf(this.localStorageKeyList.amount), 1);
+        }
+      }
+    });
+    return loadedKeys;
+  }
+
+  private loadFromLocalStorage(...keys: string[]): void {
+    // ถ้าไม่มี key ที่จะโหลดให้ return ทันที 
+    if (keys.length === 0) {
+      return;
     }
+    keys.forEach(key => {
+      // โหลดค่าจาก localStorage แบบเข้ารหัส
+      const value = this.secureStorage.getSecureStorage(key);
+      if (value !== null && value !== undefined) {
+        // ตั้งค่าลงในฟอร์มตาม key
+        switch (key) {
+          case this.localStorageKeyList.proxyType:
+            this.form.patchValue({ proxyType: value as ProxyType });
+            break;
+          case this.localStorageKeyList.mobile:
+            this.form.patchValue({ mobile: value });
+            break;
+          case this.localStorageKeyList.citizenId:
+            this.form.patchValue({ citizenId: value });
+            break;
+          case this.localStorageKeyList.amount: {
+            const amount = Number.parseFloat(value);
+            if (!Number.isNaN(amount)) {
+              this.form.patchValue({ amount: amount });
+            }
+            break;
+          }
+        }
+      }
+    });
   }
 
   rebuildQRCode(): void {
@@ -79,8 +141,9 @@ export class PromptPayQrComponent implements OnInit {
 
     try {
       const proxyType = (this.form.value.proxyType ?? "mobile");
-      const amount = Number(this.form.value.amount ?? 0);
       const idValue = proxyType === "mobile" ? this.form.value.mobile ?? "" : this.form.value.citizenId ?? "";
+      let amountAsNumber = Number(this.form.value.amount ?? 0);
+      const amount = isNaN(amountAsNumber) || amountAsNumber < 0 ? 0 : amountAsNumber;
 
       // ตรวจสอบความยาวของข้อมูล
       if (proxyType === "mobile") {
@@ -105,7 +168,7 @@ export class PromptPayQrComponent implements OnInit {
       this.secureStorage.setSecureStorage("amount", amount.toString());
 
       this.payload = this.promptPayQrService.buildDynamicByProxy(proxyType, idValue, amount);
-      
+
       // สร้างรูป QR code พร้อมข้อความ
       setTimeout(() => this.generateCombinedQRImage(), 100);
     } catch (e: any) {
@@ -131,7 +194,7 @@ export class PromptPayQrComponent implements OnInit {
     const qrSize = 256;
     const textHeight = 40;
     const padding = 0;
-    
+
     combinedCanvas.width = qrSize + (padding * 2);
     combinedCanvas.height = qrSize + textHeight + (padding * 2);
 
@@ -157,6 +220,42 @@ export class PromptPayQrComponent implements OnInit {
 
     // บันทึกเป็น data URL
     this.combinedQRImageDataUrl = combinedCanvas.toDataURL('image/png');
+  }
+
+  onAmountInput(event: any): void {
+    const value = event.target.value;
+    // ป้องกันค่าติดลบ
+    if (value < 0) {
+      event.target.value = 0;
+      this.form.patchValue({ amount: 0 });
+    }
+  }
+
+  onNumericKeyPress(event: KeyboardEvent): void {
+    // อนุญาตเฉพาะตัวเลข 0-9, Backspace, Delete, Tab, และ Arrow keys
+    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    const char = event.key;
+
+    // ถ้าไม่ใช่ตัวเลข 0-9 และไม่ใช่ปุ่มควบคุมที่อนุญาต ให้ป้องกันการพิมพ์
+    if (!/^\D$/.test(char) && !allowedKeys.includes(char)) {
+      event.preventDefault();
+    }
+  }
+
+  onNumericInput(event: any, fieldType: 'mobile' | 'citizenId'): void {
+    const value = event.target.value;
+    // ลบตัวอักษรที่ไม่ใช่ตัวเลขออก
+    const numericValue = value.replace(/[^0-9]/g, '');
+
+    if (value !== numericValue) {
+      event.target.value = numericValue;
+      // อัปเดตค่าในฟอร์ม
+      if (fieldType === 'mobile') {
+        this.form.patchValue({ mobile: numericValue });
+      } else if (fieldType === 'citizenId') {
+        this.form.patchValue({ citizenId: numericValue });
+      }
+    }
   }
 
   // Copy & Share QR Code Image

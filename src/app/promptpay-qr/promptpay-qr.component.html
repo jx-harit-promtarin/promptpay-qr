@@ -52,18 +52,18 @@
   </div>
 
   <div *ngIf="form.value.proxyType==='mobile'" class="input-group">
-    <input type="text" [formControl]="form.controls.mobile" placeholder="0XXXXXXXXX">
+    <input type="text" [formControl]="form.controls.mobile" placeholder="0XXXXXXXXX" maxlength="10" class="input-width-limited" (keypress)="onNumericKeyPress($event)" (input)="onNumericInput($event, 'mobile')">
   </div>
 
   <div *ngIf="form.value.proxyType==='citizenId'" class="input-group">
-    <input type="text" id="citizen-id-input" [formControl]="form.controls.citizenId" placeholder="1234567890123" maxlength="13" class="input-width-limited">
+    <input type="text" id="citizen-id-input" [formControl]="form.controls.citizenId" placeholder="1234567890123" maxlength="13" class="input-width-limited" (keypress)="onNumericKeyPress($event)" (input)="onNumericInput($event, 'citizenId')">
   </div>
 
   <div *ngIf="errorMsg" class="error-message">{{ errorMsg }}</div>
 
   <label for="amount-input" class="input-group">
     จำนวนเงิน (บาท)
-    <input type="number" id="amount-input" step="0.01" [formControl]="form.controls.amount" placeholder="0.00" class="input-width-limited">
+    <input type="number" id="amount-input" step="0.01" min="0" [formControl]="form.controls.amount" placeholder="0.00" class="input-width-limited" (input)="onAmountInput($event)">
   </label>
 
 

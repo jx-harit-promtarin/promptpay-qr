@@ -145,6 +145,10 @@
   width: 200px;
 }
 
+.amount-input {
+  text-align: right;
+}
+
 .error-message {
   color: #b00020;
 }
